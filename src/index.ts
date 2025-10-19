@@ -1,7 +1,28 @@
 import { Elysia } from "elysia";
+import { jwt } from "@elysiajs/jwt";
+import openapi, { fromTypes } from "@elysiajs/openapi";
+import { cors } from "@elysiajs/cors";
+import routes from "./routes";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+const app = new Elysia()
+  .use(
+    jwt({
+      name: "jwt",
+      secret: process.env.JWT_SECRET ?? "dev-secret",
+    })
+  )
+  .use(cors())
+  .use(
+    openapi({
+      references: fromTypes(
+        process.env.NODE_ENV === "production"
+          ? "dist/index.d.ts"
+          : "src/index.ts"
+      ),
+    })
+  )
+  .use(routes);
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+const port = Number(process.env.PORT || 3000);
+app.listen({ port });
+console.log(`Server listening on http://localhost:${port}`);
